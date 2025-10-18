@@ -3,18 +3,7 @@ let ws = null;
 const terminal = document.getElementById('terminal');
 const userInput = document.getElementById('userInput');
 const statusEl = document.getElementById('connection-status');
-
-// ANSI color mappings
-const ansiColorMap = {
-    '\\033\\[92m': 'text-green-400',
-    '\\033\\[91m': 'text-red-400',
-    '\\033\\[93m': 'text-yellow-400',
-    '\\033\\[94m': 'text-blue-400',
-    '\\033\\[96m': 'text-cyan-400',
-    '\\033\\[95m': 'text-purple-400',
-    '\\033\\[2m': 'text-gray-500',
-    '\\033\\[1m': 'font-bold',
-};
+let currentAnimation = null;
 
 // Connect to WebSocket
 function connect() {
@@ -26,13 +15,31 @@ function connect() {
     ws.onopen = () => {
         updateConnectionStatus(true);
         addTerminalLine('✓ Connected to diagnostic service', 'text-green-400');
-        addTerminalLine('Select an option above or type a command', 'text-gray-500');
+        addTerminalLine('Select an option or type a command (1-5)', 'text-gray-500');
     };
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.type === 'output') {
-            addTerminalLine(data.content);
+            // Stop any current animation
+            stopAnimation();
+
+            // Check if this is a "thinking" or "loading" type message
+            const content = data.content.toLowerCase();
+            if (content.includes('scanning') || content.includes('analyzing') ||
+                content.includes('checking') || content.includes('testing') ||
+                content.includes('mapping') || content.includes('detecting')) {
+                // Add animated thinking indicator
+                addAnimatedThinking(data.content);
+
+                // Auto-remove after animation completes
+                setTimeout(() => {
+                    stopAnimation();
+                    addTerminalLine(data.content);
+                }, 1500);
+            } else {
+                addTerminalLine(data.content);
+            }
         }
     };
 
@@ -58,15 +65,61 @@ function updateConnectionStatus(connected) {
     if (connected) {
         statusEl.innerHTML = `
             <span class="w-2 h-2 rounded-full bg-green-500 status-pulse"></span>
-            <span class="text-sm text-green-300 font-medium">Connected</span>
+            <span class="text-sm text-green-300 font-medium hidden sm:inline">Connected</span>
+            <span class="text-xs text-green-300 font-medium sm:hidden">●</span>
         `;
-        statusEl.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20';
+        statusEl.className = 'flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-green-500/10 border border-green-500/20';
     } else {
         statusEl.innerHTML = `
             <span class="w-2 h-2 rounded-full bg-red-500 status-pulse"></span>
-            <span class="text-sm text-red-300 font-medium">Disconnected</span>
+            <span class="text-sm text-red-300 font-medium hidden sm:inline">Disconnected</span>
+            <span class="text-xs text-red-300 font-medium sm:hidden">●</span>
         `;
-        statusEl.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20';
+        statusEl.className = 'flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-red-500/10 border border-red-500/20';
+    }
+}
+
+// Add animated thinking indicator
+function addAnimatedThinking(message) {
+    const line = document.createElement('div');
+    line.className = 'terminal-line mb-1 flex items-center gap-2';
+    line.id = 'thinking-animation';
+
+    // Create spinner
+    const spinner = document.createElement('span');
+    spinner.className = 'inline-block animate-spin';
+    spinner.innerHTML = '◐';
+
+    // Create message
+    const text = document.createElement('span');
+    text.className = 'text-cyan-400';
+    text.textContent = message;
+
+    line.appendChild(spinner);
+    line.appendChild(text);
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+
+    currentAnimation = line;
+
+    // Cycle through spinner characters
+    const spinnerChars = ['◐', '◓', '◑', '◒'];
+    let i = 0;
+    const interval = setInterval(() => {
+        if (currentAnimation) {
+            spinner.textContent = spinnerChars[i % spinnerChars.length];
+            i++;
+        } else {
+            clearInterval(interval);
+        }
+    }, 150);
+}
+
+// Stop current animation
+function stopAnimation() {
+    if (currentAnimation) {
+        currentAnimation.remove();
+        currentAnimation = null;
     }
 }
 
@@ -112,11 +165,67 @@ function addTerminalLine(content, additionalClasses = '') {
     terminal.scrollTop = terminal.scrollHeight;
 }
 
+// Add animated progress bar
+function addProgressBar(message, duration = 2000) {
+    const line = document.createElement('div');
+    line.className = 'terminal-line mb-1';
+    line.id = 'progress-animation';
+
+    const progressText = document.createElement('div');
+    progressText.className = 'text-blue-400 mb-1';
+    progressText.textContent = message;
+
+    const progressBar = document.createElement('div');
+    progressBar.className = 'flex items-center gap-2';
+
+    const bar = document.createElement('div');
+    bar.className = 'flex-1 h-2 bg-gray-700 rounded overflow-hidden';
+
+    const fill = document.createElement('div');
+    fill.className = 'h-full bg-blue-500 transition-all';
+    fill.style.width = '0%';
+
+    bar.appendChild(fill);
+
+    const percent = document.createElement('span');
+    percent.className = 'text-gray-400 text-sm w-12';
+    percent.textContent = '0%';
+
+    progressBar.appendChild(bar);
+    progressBar.appendChild(percent);
+
+    line.appendChild(progressText);
+    line.appendChild(progressBar);
+    terminal.appendChild(line);
+    terminal.scrollTop = terminal.scrollHeight;
+
+    currentAnimation = line;
+
+    // Animate progress
+    const steps = 20;
+    const stepDuration = duration / steps;
+    let currentStep = 0;
+
+    const interval = setInterval(() => {
+        if (currentAnimation && currentStep <= steps) {
+            const percentage = (currentStep / steps) * 100;
+            fill.style.width = `${percentage}%`;
+            percent.textContent = `${Math.round(percentage)}%`;
+            currentStep++;
+        } else {
+            clearInterval(interval);
+            if (currentAnimation) {
+                setTimeout(() => stopAnimation(), 500);
+            }
+        }
+    }, stepDuration);
+}
+
 // Send user input
 function sendInput() {
     const value = userInput.value.trim();
     if (value && ws && ws.readyState === WebSocket.OPEN) {
-        addTerminalLine(`> ${value}`, 'text-cyan-400');
+        addTerminalLine(`> ${value}`, 'text-cyan-400 font-bold');
         ws.send(JSON.stringify({ type: 'input', content: value }));
         userInput.value = '';
     }
@@ -125,7 +234,7 @@ function sendInput() {
 // Send command (from buttons)
 function sendCommand(cmd) {
     if (ws && ws.readyState === WebSocket.OPEN) {
-        addTerminalLine(`> ${cmd}`, 'text-cyan-400 font-semibold');
+        addTerminalLine(`> ${cmd}`, 'text-cyan-400 font-bold');
         ws.send(JSON.stringify({ type: 'input', content: cmd }));
     } else {
         addTerminalLine('Not connected to server. Reconnecting...', 'text-yellow-400');
@@ -143,10 +252,11 @@ function handleKeyPress(event) {
 // Clear terminal
 function clearTerminal() {
     terminal.innerHTML = '';
+    stopAnimation();
     addTerminalLine('Terminal cleared', 'text-gray-500');
 
     if (ws && ws.readyState === WebSocket.OPEN) {
-        addTerminalLine('Select an option above or type a command', 'text-gray-500');
+        addTerminalLine('Select an option or type a command (1-5)', 'text-gray-500');
     } else {
         addTerminalLine('Reconnecting...', 'text-yellow-400');
         if (ws) ws.close();
