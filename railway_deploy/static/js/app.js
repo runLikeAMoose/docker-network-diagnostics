@@ -1,7 +1,7 @@
 // WebSocket connection
 let ws = null;
 const terminal = document.getElementById('terminal');
-const userInput = document.getElementById('userInput');
+const terminalInput = document.getElementById('terminalInput');
 const statusEl = document.getElementById('connection-status');
 let currentAnimation = null;
 
@@ -15,7 +15,15 @@ function connect() {
     ws.onopen = () => {
         updateConnectionStatus(true);
         addTerminalLine('✓ Connected to diagnostic service', 'text-green-400');
-        addTerminalLine('Select an option or type a command (1-5)', 'text-gray-500');
+        addTerminalLine('', '');
+        addTerminalLine('Available Commands:', 'text-cyan-400');
+        addTerminalLine('  [1] Full Network Diagnostic', 'text-gray-400');
+        addTerminalLine('  [2] Guided Troubleshooting Wizard', 'text-gray-400');
+        addTerminalLine('  [3] Live Connection Monitor', 'text-gray-400');
+        addTerminalLine('  [4] Quick Health Check', 'text-gray-400');
+        addTerminalLine('  [5] Network Topology Viewer', 'text-gray-400');
+        addTerminalLine('', '');
+        addTerminalLine('Type a command number (1-5) or "help" for more info', 'text-gray-500');
     };
 
     ws.onmessage = (event) => {
@@ -29,6 +37,12 @@ function connect() {
         } else if (data.type === 'clear_last') {
             // Remove last line
             removeLastLine();
+        } else if (data.type === 'clear_last_n') {
+            // Remove last N lines
+            removeLastLines(data.count || 1);
+        } else if (data.type === 'update_last_n') {
+            // Update last N lines in place (for live monitoring)
+            updateLastNLines(data.lines || []);
         }
     };
 
@@ -134,12 +148,22 @@ function processContent(content) {
         .replace(/\033\[[0-9;]+m/g, ''); // Remove other codes
 
     // Handle special characters and symbols
+    // Check if line contains "stopped" or "down" to color circle red
+    const isStopped = /stopped|down/i.test(content);
+
     processed = processed
         .replace(/✓/g, '<span class="text-green-400">✓</span>')
         .replace(/✗/g, '<span class="text-red-400">✗</span>')
-        .replace(/⚠/g, '<span class="text-yellow-400">⚠</span>')
-        .replace(/●/g, '<span class="text-green-400">●</span>')
-        .replace(/○/g, '<span class="text-gray-500">○</span>');
+        .replace(/⚠/g, '<span class="text-yellow-400">⚠</span>');
+
+    // Color circles based on context
+    if (isStopped) {
+        processed = processed.replace(/●/g, '<span class="text-red-400">●</span>');
+    } else {
+        processed = processed.replace(/●/g, '<span class="text-green-400">●</span>');
+    }
+
+    processed = processed.replace(/○/g, '<span class="text-gray-500">○</span>');
 
     return processed;
 }
@@ -151,8 +175,10 @@ function addTerminalLine(content, additionalClasses = '') {
     line.innerHTML = processContent(content);
     terminal.appendChild(line);
 
-    // Auto-scroll to bottom
-    terminal.scrollTop = terminal.scrollHeight;
+    // Auto-scroll to bottom with smooth behavior
+    requestAnimationFrame(() => {
+        terminal.scrollTop = terminal.scrollHeight;
+    });
 }
 
 // Update the last line in terminal (for animations)
@@ -164,7 +190,10 @@ function updateLastLine(content) {
     } else {
         addTerminalLine(content);
     }
-    terminal.scrollTop = terminal.scrollHeight;
+    // Auto-scroll to bottom
+    requestAnimationFrame(() => {
+        terminal.scrollTop = terminal.scrollHeight;
+    });
 }
 
 // Remove the last line from terminal
@@ -172,6 +201,28 @@ function removeLastLine() {
     const lines = terminal.querySelectorAll('.terminal-line');
     if (lines.length > 0) {
         lines[lines.length - 1].remove();
+    }
+}
+
+// Remove last N lines from terminal
+function removeLastLines(count) {
+    const lines = terminal.querySelectorAll('.terminal-line');
+    const numToRemove = Math.min(count, lines.length);
+    for (let i = 0; i < numToRemove; i++) {
+        lines[lines.length - 1 - i].remove();
+    }
+}
+
+// Update multiple lines from the end (for live monitoring)
+function updateLastNLines(updates) {
+    const lines = terminal.querySelectorAll('.terminal-line');
+    const startIndex = lines.length - updates.length;
+
+    for (let i = 0; i < updates.length; i++) {
+        const lineIndex = startIndex + i;
+        if (lineIndex >= 0 && lineIndex < lines.length) {
+            lines[lineIndex].innerHTML = processContent(updates[i]);
+        }
     }
 }
 
@@ -231,14 +282,20 @@ function addProgressBar(message, duration = 2000) {
     }, stepDuration);
 }
 
-// Send user input
-function sendInput() {
-    const value = userInput.value.trim();
+// Send terminal input
+function sendTerminalInput() {
+    const value = terminalInput.value.trim();
     if (value && ws && ws.readyState === WebSocket.OPEN) {
         addTerminalLine(`> ${value}`, 'text-cyan-400 font-bold');
         ws.send(JSON.stringify({ type: 'input', content: value }));
-        userInput.value = '';
+        terminalInput.value = '';
+        // addTerminalLine already handles scrolling
     }
+}
+
+// Focus terminal input when clicking on terminal
+function focusTerminalInput() {
+    terminalInput.focus();
 }
 
 // Send command (from buttons)
@@ -246,16 +303,18 @@ function sendCommand(cmd) {
     if (ws && ws.readyState === WebSocket.OPEN) {
         addTerminalLine(`> ${cmd}`, 'text-cyan-400 font-bold');
         ws.send(JSON.stringify({ type: 'input', content: cmd }));
+        terminalInput.value = '';
+        // addTerminalLine already handles scrolling
     } else {
         addTerminalLine('Not connected to server. Reconnecting...', 'text-yellow-400');
         connect();
     }
 }
 
-// Handle Enter key in input
-function handleKeyPress(event) {
+// Handle Enter key in terminal input
+function handleTerminalKeyPress(event) {
     if (event.key === 'Enter') {
-        sendInput();
+        sendTerminalInput();
     }
 }
 
@@ -264,9 +323,17 @@ function clearTerminal() {
     terminal.innerHTML = '';
     stopAnimation();
     addTerminalLine('Terminal cleared', 'text-gray-500');
+    addTerminalLine('', '');
 
     if (ws && ws.readyState === WebSocket.OPEN) {
-        addTerminalLine('Select an option or type a command (1-5)', 'text-gray-500');
+        addTerminalLine('Available Commands:', 'text-cyan-400');
+        addTerminalLine('  [1] Full Network Diagnostic', 'text-gray-400');
+        addTerminalLine('  [2] Guided Troubleshooting Wizard', 'text-gray-400');
+        addTerminalLine('  [3] Live Connection Monitor', 'text-gray-400');
+        addTerminalLine('  [4] Quick Health Check', 'text-gray-400');
+        addTerminalLine('  [5] Network Topology Viewer', 'text-gray-400');
+        addTerminalLine('', '');
+        addTerminalLine('Type a command number (1-5) or "help" for more info', 'text-gray-500');
     } else {
         addTerminalLine('Reconnecting...', 'text-yellow-400');
         if (ws) ws.close();
@@ -286,7 +353,7 @@ function reconnect() {
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', () => {
     connect();
-    userInput.focus();
+    terminalInput.focus();
 });
 
 // Handle page visibility (reconnect when tab becomes active)
@@ -294,4 +361,9 @@ document.addEventListener('visibilitychange', () => {
     if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
         reconnect();
     }
+});
+
+// Global error handler for debugging
+window.addEventListener('error', (event) => {
+    console.error('Global error:', event.error);
 });

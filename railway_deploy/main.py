@@ -188,7 +188,7 @@ async def run_diagnostic_demo(ws: WebSocket):
     containers = [
         "  ● web-app            172.18.0.2      Ports: 8080:80",
         "  ● database           172.18.0.3      No exposed ports",
-        "  ○ redis              172.18.0.4      Container stopped",
+        "  ● redis              172.18.0.4      Container stopped",
         "  ● api-service        172.18.0.5      Ports: 3000:3000",
         "  ● external-api       172.19.0.2      Ports: 8081:80"
     ]
@@ -213,38 +213,38 @@ async def run_diagnostic_demo(ws: WebSocket):
     await ws.send_json({"type": "animate", "content": "  ✓ Topology mapped"})
     await send_line(ws, "")
     await send_line(ws, "")
-    await send_line(ws, "              ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-    await send_line(ws, "              ┃  🖥️  Host (macOS/Win)    ┃")
-    await send_line(ws, "              ┗━━━━━━━━━━━┳━━━━━━━━━━━━━┛")
-    await send_line(ws, "                          ┃")
-    await send_line(ws, "                          ┃ Port Forward")
-    await send_line(ws, "                          ▼")
-    await send_line(ws, "              ╔═══════════════════════════╗")
-    await send_line(ws, "              ║  🌐 Bridge: my_network    ║")
-    await send_line(ws, "              ║  Subnet: 172.18.0.0/16    ║")
-    await send_line(ws, "              ╚═══════════╦═══════════════╝")
-    await send_line(ws, "                          ┃")
-    await send_line(ws, "            ┌─────────────┼─────────────┐")
-    await send_line(ws, "            │             │             │")
-    await send_line(ws, "            ▼             ▼             ▼")
+    await send_line(ws, "                ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+    await send_line(ws, "                ┃  🖥️  Host (macOS/Win)    ┃")
+    await send_line(ws, "                ┗━━━━━━━━━━━┳━━━━━━━━━━━━━┛")
+    await send_line(ws, "                            ┃")
+    await send_line(ws, "                            ┃ Port Forward")
+    await send_line(ws, "                            ▼")
+    await send_line(ws, "                ╔═══════════════════════════╗")
+    await send_line(ws, "                ║  🌐 Bridge: my_network    ║")
+    await send_line(ws, "                ║  Subnet: 172.18.0.0/16    ║")
+    await send_line(ws, "                ╚═══════════╦═══════════════╝")
+    await send_line(ws, "                            ┃")
+    await send_line(ws, "              ┌─────────────┼─────────────┐")
+    await send_line(ws, "              │             │             │")
+    await send_line(ws, "              ▼             ▼             ▼")
     await send_line(ws, "")
-    await send_line(ws, "       ┌────────┐    ┌────────┐    ┌────────┐")
-    await send_line(ws, "       │✓ web   │    │✓ api   │    │⚠ db    │")
-    await send_line(ws, "       │  -app  │    │  -svc  │    │  -base │")
-    await send_line(ws, "       └────────┘    └────────┘    └────────┘")
-    await send_line(ws, "       172.18.0.2    172.18.0.5    172.18.0.3")
-    await send_line(ws, "       8080:80       3000:3000     No ports")
+    await send_line(ws, "         ┌────────┐    ┌────────┐    ┌────────┐")
+    await send_line(ws, "         │✓ web   │    │✓ api   │    │⚠ db    │")
+    await send_line(ws, "         │  -app  │    │  -svc  │    │  -base │")
+    await send_line(ws, "         └────────┘    └────────┘    └────────┘")
+    await send_line(ws, "         172.18.0.2    172.18.0.5    172.18.0.3")
+    await send_line(ws, "         8080:80       3000:3000     No ports")
     await send_line(ws, "")
-    await send_line(ws, "            │             │             │")
-    await send_line(ws, "            └─────────────┼─────────────┘")
-    await send_line(ws, "                          │")
-    await send_line(ws, "                          ▼")
+    await send_line(ws, "              │             │             │")
+    await send_line(ws, "              └─────────────┼─────────────┘")
+    await send_line(ws, "                            │")
+    await send_line(ws, "                            ▼")
     await send_line(ws, "")
-    await send_line(ws, "                     ┌────────┐")
-    await send_line(ws, "                     │✗ redis │")
-    await send_line(ws, "                     │ (down) │")
-    await send_line(ws, "                     └────────┘")
-    await send_line(ws, "                     172.18.0.4")
+    await send_line(ws, "                       ┌────────┐")
+    await send_line(ws, "                       │✗ redis │")
+    await send_line(ws, "                       │ (down) │")
+    await send_line(ws, "                       └────────┘")
+    await send_line(ws, "                       172.18.0.4")
     await send_line(ws, "")
     await send_line(ws, "")
 
@@ -326,6 +326,13 @@ async def run_monitor_demo(ws: WebSocket):
     await send_line(ws, "Connection                           Throughput             Latency    Status")
     await send_line(ws, "──────────────────────────────────────────────────────────────────────────")
 
+    # Add initial placeholder lines for the 5 connections
+    await send_line(ws, "web-app → database:3306              ░░░░░░░░░░░░    0 pkt/s     0ms       Loading...")
+    await send_line(ws, "api-service → database:3306          ░░░░░░░░░░░░    0 pkt/s     0ms       Loading...")
+    await send_line(ws, "web-app → redis:6379                 ░░░░░░░░░░░░    0 pkt/s     0ms       Loading...")
+    await send_line(ws, "Host → web-app:80                    ░░░░░░░░░░░░    0 pkt/s     0ms       Loading...")
+    await send_line(ws, "Host → api-service:3000              ░░░░░░░░░░░░    0 pkt/s     0ms       Loading...")
+
     # Run live updates for 10 iterations (5 seconds)
     import random
     for iteration in range(10):
@@ -348,31 +355,17 @@ async def run_monitor_demo(ws: WebSocket):
         host_web_bar = "█" * min(host_web_packets // 25, 11) + "░" * max(11 - host_web_packets // 25, 0)
         host_api_bar = "█" * (host_api_packets // 20) + "░" * (12 - host_api_packets // 20)
 
-        # Send frame
+        # Update the 5 connection lines in place (no delete/add)
         await ws.send_json({
-            "type": "output",
-            "content": f"web-app → database:3306              {web_db_bar}  {web_db_packets:3d} pkt/s   {web_db_latency:2d}ms      ✓ Active"
+            "type": "update_last_n",
+            "lines": [
+                f"web-app → database:3306              {web_db_bar}  {web_db_packets:3d} pkt/s   {web_db_latency:2d}ms      ✓ Active",
+                f"api-service → database:3306          {api_db_bar}  {api_db_packets:3d} pkt/s   {api_db_latency:2d}ms      ✓ Active",
+                f"web-app → redis:6379                 ✗░░░░░░░░░░░   0 pkt/s     -         ✗ Failed",
+                f"Host → web-app:80                    {host_web_bar}  {host_web_packets:3d} pkt/s   {host_web_latency:2d}ms      ✓ Active",
+                f"Host → api-service:3000              {host_api_bar}  {host_api_packets:3d} pkt/s   {host_api_latency:2d}ms      ✓ Active"
+            ]
         })
-        await ws.send_json({
-            "type": "output",
-            "content": f"api-service → database:3306          {api_db_bar}  {api_db_packets:3d} pkt/s   {api_db_latency:2d}ms      ✓ Active"
-        })
-        await ws.send_json({
-            "type": "output",
-            "content": f"web-app → redis:6379                 ✗░░░░░░░░░░░   0 pkt/s     -         ✗ Failed"
-        })
-        await ws.send_json({
-            "type": "output",
-            "content": f"Host → web-app:80                    {host_web_bar}  {host_web_packets:3d} pkt/s   {host_web_latency:2d}ms      ✓ Active"
-        })
-        await ws.send_json({
-            "type": "output",
-            "content": f"Host → api-service:3000              {host_api_bar}  {host_api_packets:3d} pkt/s   {host_api_latency:2d}ms      ✓ Active"
-        })
-
-        # Add separator between frames
-        if iteration < 9:
-            await ws.send_json({"type": "output", "content": "──────────────────────────────────────────────────────────────────────────"})
 
         # Wait 500ms before next update
         await asyncio.sleep(0.5)
@@ -412,42 +405,42 @@ async def run_topology_demo(ws: WebSocket):
     await send_line(ws, "═══════════════════════════════════════════════")
     await send_line(ws, "")
     await send_line(ws, "")
-    await send_line(ws, "         ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
-    await send_line(ws, "         ┃   🖥️  Host Network (macOS)   ┃")
-    await send_line(ws, "         ┃    Docker Desktop VM         ┃")
-    await send_line(ws, "         ┗━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┛")
-    await send_line(ws, "                       ┃")
-    await send_line(ws, "                       ┃ Port Mapping")
-    await send_line(ws, "                       ┃")
-    await send_line(ws, "                       ▼")
-    await send_line(ws, "         ╔═════════════════════════════╗")
-    await send_line(ws, "         ║  🌐 Bridge: my_network      ║")
-    await send_line(ws, "         ║  📡 Subnet: 172.18.0.0/16   ║")
-    await send_line(ws, "         ║  🔗 Gateway: 172.18.0.1     ║")
-    await send_line(ws, "         ╚═════════════╦═══════════════╝")
-    await send_line(ws, "                       ┃")
-    await send_line(ws, "         ┌─────────────┼─────────────┐")
-    await send_line(ws, "         │             │             │")
-    await send_line(ws, "         ▼             ▼             ▼")
+    await send_line(ws, "           ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+    await send_line(ws, "           ┃   🖥️  Host Network (macOS)   ┃")
+    await send_line(ws, "           ┃    Docker Desktop VM         ┃")
+    await send_line(ws, "           ┗━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┛")
+    await send_line(ws, "                         ┃")
+    await send_line(ws, "                         ┃ Port Mapping")
+    await send_line(ws, "                         ┃")
+    await send_line(ws, "                         ▼")
+    await send_line(ws, "           ╔═════════════════════════════╗")
+    await send_line(ws, "           ║  🌐 Bridge: my_network      ║")
+    await send_line(ws, "           ║  📡 Subnet: 172.18.0.0/16   ║")
+    await send_line(ws, "           ║  🔗 Gateway: 172.18.0.1     ║")
+    await send_line(ws, "           ╚═════════════╦═══════════════╝")
+    await send_line(ws, "                         ┃")
+    await send_line(ws, "           ┌─────────────┼─────────────┐")
+    await send_line(ws, "           │             │             │")
+    await send_line(ws, "           ▼             ▼             ▼")
     await send_line(ws, "")
-    await send_line(ws, "    ┌─────────┐   ┌─────────┐   ┌──────────┐")
-    await send_line(ws, "    │ ✓ web   │   │ ✓ api   │   │ ⚠ db     │")
-    await send_line(ws, "    │  -app   │   │  -svc   │   │  -base   │")
-    await send_line(ws, "    └─────────┘   └─────────┘   └──────────┘")
-    await send_line(ws, "    172.18.0.2    172.18.0.5    172.18.0.3")
-    await send_line(ws, "    8080:80       3000:3000     No ports")
-    await send_line(ws, "    ")
-    await send_line(ws, "         │             │             │")
-    await send_line(ws, "         └─────────────┼─────────────┘")
-    await send_line(ws, "                       │")
-    await send_line(ws, "                       ▼")
+    await send_line(ws, "      ┌─────────┐   ┌─────────┐   ┌──────────┐")
+    await send_line(ws, "      │ ✓ web   │   │ ✓ api   │   │ ⚠ db     │")
+    await send_line(ws, "      │  -app   │   │  -svc   │   │  -base   │")
+    await send_line(ws, "      └─────────┘   └─────────┘   └──────────┘")
+    await send_line(ws, "      172.18.0.2    172.18.0.5    172.18.0.3")
+    await send_line(ws, "      8080:80       3000:3000     No ports")
     await send_line(ws, "")
-    await send_line(ws, "                 ┌──────────┐")
-    await send_line(ws, "                 │ ✗ redis  │")
-    await send_line(ws, "                 │  (down)  │")
-    await send_line(ws, "                 └──────────┘")
-    await send_line(ws, "                 172.18.0.4")
-    await send_line(ws, "                 6379:6379")
+    await send_line(ws, "           │             │             │")
+    await send_line(ws, "           └─────────────┼─────────────┘")
+    await send_line(ws, "                         │")
+    await send_line(ws, "                         ▼")
+    await send_line(ws, "")
+    await send_line(ws, "                    ┌──────────┐")
+    await send_line(ws, "                    │ ✗ redis  │")
+    await send_line(ws, "                    │  (down)  │")
+    await send_line(ws, "                    └──────────┘")
+    await send_line(ws, "                    172.18.0.4")
+    await send_line(ws, "                    6379:6379")
     await send_line(ws, "")
     await send_line(ws, "")
     await send_line(ws, "Legend:")

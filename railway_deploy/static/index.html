@@ -3,7 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Docker Network Diagnostics</title>
+    <title>Dockter - Docker Network Diagnostics</title>
+
+    <!-- Open Graph / Social Media Meta Tags -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Dockter - Docker Network Diagnostics">
+    <meta property="og:description" content="Interactive tool to debug Docker networking issues. Real-time diagnostics, network topology visualization, and connection testing.">
+    <meta property="og:image" content="/static/og-image.png">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Dockter - Docker Network Diagnostics Tool">
+
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Dockter - Docker Network Diagnostics">
+    <meta name="twitter:description" content="Interactive tool to debug Docker networking issues. Real-time diagnostics, network topology visualization, and connection testing.">
+    <meta name="twitter:image" content="/static/og-image.png">
+    <meta name="twitter:image:alt" content="Dockter - Docker Network Diagnostics Tool">
 
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -44,6 +61,7 @@
         }
         .terminal-line {
             animation: fadeIn 0.15s ease-out;
+            white-space: pre;
         }
 
         /* Pulse animation for status dot */
@@ -54,18 +72,61 @@
         .status-pulse {
             animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
+
+        /* Responsive terminal font sizing - prevent horizontal scroll */
+        @media (max-width: 375px) {
+            #terminal {
+                font-size: 0.5rem;
+                padding: 0.5rem;
+                line-height: 1.2;
+            }
+        }
+        @media (min-width: 376px) and (max-width: 640px) {
+            #terminal {
+                font-size: 0.6rem;
+                padding: 0.75rem;
+                line-height: 1.3;
+            }
+        }
+        @media (min-width: 641px) and (max-width: 768px) {
+            #terminal {
+                font-size: 0.75rem;
+            }
+        }
+        @media (min-width: 769px) {
+            #terminal {
+                font-size: 0.875rem;
+            }
+        }
+
+        /* Prevent scroll on body - constrain to viewport */
+        body {
+            max-width: 100vw;
+            max-height: 100vh;
+        }
+
+        /* Cursor blink animation for terminal input */
+        #terminalInput:focus {
+            caret-color: #10b981;
+        }
+
+        /* Make terminal clickable to focus input */
+        #terminal {
+            cursor: text;
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col">
+<body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
 
     <!-- Simple Header -->
     <header class="flex-shrink-0 bg-gray-800 border-b border-gray-700 px-4 sm:px-6 py-3 sm:py-4">
         <div class="max-w-6xl mx-auto flex items-center justify-between gap-4">
             <div class="min-w-0">
                 <h1 class="text-lg sm:text-2xl font-bold text-white truncate">
-                    🐳 Docker Network Diagnostics
+                    🐳 Dockter
                 </h1>
-                <p class="text-xs sm:text-sm text-gray-400 mt-1 hidden sm:block">Interactive network debugging tool</p>
+                <p class="text-xs sm:text-sm text-gray-400 mt-1 hidden sm:block">Docker Network Diagnostics</p>
             </div>
             <div class="flex items-center gap-4 flex-shrink-0">
                 <div id="connection-status" class="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg bg-red-500/10 border border-red-500/20">
@@ -78,10 +139,10 @@
     </header>
 
     <!-- Main Terminal Area -->
-    <main class="flex-1 flex flex-col max-w-6xl w-full mx-auto p-4 sm:p-6 gap-4 min-h-0">
+    <main class="flex-1 flex flex-col max-w-6xl w-full mx-auto p-4 sm:p-6 min-h-0 overflow-hidden">
 
-        <!-- Terminal Window (Fixed Height) -->
-        <div class="bg-gray-800 rounded-lg shadow-2xl border border-gray-700 overflow-hidden flex flex-col" style="height: calc(100vh - 280px); min-height: 400px; max-height: 800px;">
+        <!-- Terminal Window (Full Height) -->
+        <div class="bg-gray-800 rounded-lg shadow-2xl border border-gray-700 overflow-hidden flex flex-col flex-1 min-h-0">
             <!-- Terminal Header -->
             <div class="bg-gray-900 px-4 py-3 border-b border-gray-700 flex items-center justify-between flex-shrink-0">
                 <div class="flex items-center gap-3">
@@ -101,50 +162,27 @@
 
             <!-- Terminal Output (Scrollable) -->
             <div id="terminal"
-                 class="flex-1 bg-black/80 p-4 sm:p-6 overflow-y-auto font-mono text-sm terminal-scroll min-h-0">
+                 class="flex-1 bg-black/80 p-4 sm:p-6 overflow-y-auto overflow-x-hidden font-mono text-sm terminal-scroll min-h-0"
+                 onclick="focusTerminalInput()">
                 <div class="text-cyan-400 mb-2">🐳 Docker Network Diagnostic Tool</div>
                 <div class="text-gray-500">Connecting to diagnostic service...</div>
             </div>
-        </div>
 
-        <!-- Input Area (Fixed Position) -->
-        <div class="flex-shrink-0 flex gap-2 sm:gap-3 flex-wrap sm:flex-nowrap">
-            <input
-                type="text"
-                id="userInput"
-                placeholder="Type: 1=Diagnostic, 2=Wizard, 3=Monitor, 4=Health, 5=Topology..."
-                class="flex-1 min-w-0 bg-gray-800 border border-gray-700 rounded-lg px-3 sm:px-4 py-2 sm:py-3 text-white placeholder-gray-500 text-sm focus:outline-none focus:ring-2 focus:ring-docker-blue focus:border-transparent transition-all font-mono"
-                onkeypress="handleKeyPress(event)"
-            >
-            <button
-                onclick="sendInput()"
-                class="px-4 sm:px-6 py-2 sm:py-3 bg-docker-blue hover:bg-blue-600 text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl text-sm whitespace-nowrap">
-                Send
-            </button>
-            <button
-                onclick="clearTerminal()"
-                class="px-4 sm:px-6 py-2 sm:py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all text-sm whitespace-nowrap">
-                Clear
-            </button>
-        </div>
-
-        <!-- Quick Commands (Fixed Position) -->
-        <div class="flex-shrink-0 flex gap-2 flex-wrap justify-center sm:justify-start">
-            <button onclick="sendCommand('1')" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-all whitespace-nowrap">
-                [1] Full Diagnostic
-            </button>
-            <button onclick="sendCommand('2')" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-all whitespace-nowrap">
-                [2] Wizard
-            </button>
-            <button onclick="sendCommand('3')" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-all whitespace-nowrap">
-                [3] Monitor
-            </button>
-            <button onclick="sendCommand('4')" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-all whitespace-nowrap">
-                [4] Health
-            </button>
-            <button onclick="sendCommand('5')" class="px-3 py-1.5 text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-700 transition-all whitespace-nowrap">
-                [5] Topology
-            </button>
+            <!-- Integrated Terminal Input (always visible, at bottom of terminal) -->
+            <div class="flex-shrink-0 bg-black/80 px-4 sm:px-6 py-3 border-t border-gray-700/50 flex items-center gap-2">
+                <span class="text-green-400 font-mono text-sm">❯</span>
+                <input
+                    type="text"
+                    id="terminalInput"
+                    placeholder="Type command (1-5) or 'help'..."
+                    class="flex-1 bg-transparent border-none text-white placeholder-gray-600 text-sm focus:outline-none font-mono"
+                    onkeypress="handleTerminalKeyPress(event)"
+                    autocomplete="off"
+                    autocorrect="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                >
+            </div>
         </div>
 
     </main>
