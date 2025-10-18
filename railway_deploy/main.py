@@ -4,404 +4,29 @@ FastAPI Web Wrapper for Docker Network Diagnostic Tool
 Deploys to Railway for remote access
 """
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request
-from fastapi.responses import HTMLResponse
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 import asyncio
-import json
 import sys
-import io
-from contextlib import redirect_stdout, redirect_stderr
+from pathlib import Path
 
 # Import the diagnostic tool
 sys.path.insert(0, '..')
-import docker_network_debug as dnd
 
 app = FastAPI(title="Docker Network Diagnostics", version="1.0.0")
+
+# Mount static files
+static_path = Path(__file__).parent / "static"
+app.mount("/static", StaticFiles(directory=str(static_path)), name="static")
 
 # Store active websocket connections
 active_connections = []
 
-HTML_TEMPLATE = """
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Docker Network Diagnostics</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
-            background: #0d1117;
-            color: #c9d1d9;
-            padding: 20px;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            padding: 30px 0;
-            border-bottom: 2px solid #30363d;
-            margin-bottom: 30px;
-        }
-
-        .header h1 {
-            color: #58a6ff;
-            font-size: 2.5em;
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: #8b949e;
-            font-size: 1.1em;
-        }
-
-        .terminal {
-            background: #161b22;
-            border: 1px solid #30363d;
-            border-radius: 8px;
-            padding: 20px;
-            min-height: 500px;
-            max-height: 70vh;
-            overflow-y: auto;
-            margin-bottom: 20px;
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-        }
-
-        .terminal-line {
-            margin: 4px 0;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        .input-section {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-        }
-
-        .input-section input {
-            flex: 1;
-            background: #0d1117;
-            border: 1px solid #30363d;
-            color: #c9d1d9;
-            padding: 12px 16px;
-            border-radius: 6px;
-            font-family: inherit;
-            font-size: 16px;
-        }
-
-        .input-section input:focus {
-            outline: none;
-            border-color: #58a6ff;
-        }
-
-        .btn {
-            background: #238636;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 16px;
-            transition: background 0.2s;
-        }
-
-        .btn:hover {
-            background: #2ea043;
-        }
-
-        .btn-secondary {
-            background: #21262d;
-        }
-
-        .btn-secondary:hover {
-            background: #30363d;
-        }
-
-        .menu-buttons {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-
-        .menu-button {
-            background: #21262d;
-            border: 1px solid #30363d;
-            color: #c9d1d9;
-            padding: 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: left;
-        }
-
-        .menu-button:hover {
-            background: #30363d;
-            border-color: #58a6ff;
-            transform: translateY(-2px);
-        }
-
-        .menu-button .icon {
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-
-        .menu-button .title {
-            font-weight: bold;
-            color: #58a6ff;
-            margin-bottom: 5px;
-        }
-
-        .menu-button .desc {
-            font-size: 0.9em;
-            color: #8b949e;
-        }
-
-        .status {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 12px;
-            font-size: 0.85em;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-
-        .status.connected {
-            background: #238636;
-            color: white;
-        }
-
-        .status.disconnected {
-            background: #da3633;
-            color: white;
-        }
-
-        /* ANSI color mappings */
-        .ansi-green { color: #3fb950; }
-        .ansi-red { color: #f85149; }
-        .ansi-yellow { color: #d29922; }
-        .ansi-blue { color: #58a6ff; }
-        .ansi-cyan { color: #39c5cf; }
-        .ansi-magenta { color: #bc8cff; }
-        .ansi-dim { color: #6e7681; }
-        .ansi-bold { font-weight: bold; }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.8em;
-            }
-
-            .menu-buttons {
-                grid-template-columns: 1fr;
-            }
-
-            body {
-                padding: 10px;
-            }
-        }
-
-        .loading {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border: 2px solid #30363d;
-            border-top-color: #58a6ff;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .footer {
-            text-align: center;
-            padding: 30px 0;
-            border-top: 1px solid #30363d;
-            color: #8b949e;
-            margin-top: 50px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>🐳 Docker Network Diagnostics</h1>
-            <p>Intelligent network debugging for Docker Desktop</p>
-            <div style="margin-top: 15px;">
-                <span id="status" class="status disconnected">Disconnected</span>
-            </div>
-        </div>
-
-        <div class="menu-buttons">
-            <div class="menu-button" onclick="sendCommand('1')">
-                <div class="icon">🔍</div>
-                <div class="title">Full Network Diagnostic</div>
-                <div class="desc">Comprehensive analysis of container networking</div>
-            </div>
-
-            <div class="menu-button" onclick="sendCommand('2')">
-                <div class="icon">🧙</div>
-                <div class="title">Guided Wizard</div>
-                <div class="desc">Step-by-step troubleshooting</div>
-            </div>
-
-            <div class="menu-button" onclick="sendCommand('3')">
-                <div class="icon">📊</div>
-                <div class="title">Live Monitor</div>
-                <div class="desc">Real-time traffic visualization</div>
-            </div>
-
-            <div class="menu-button" onclick="sendCommand('4')">
-                <div class="icon">⚡</div>
-                <div class="title">Quick Health Check</div>
-                <div class="desc">Fast connectivity validation</div>
-            </div>
-
-            <div class="menu-button" onclick="sendCommand('5')">
-                <div class="icon">🌐</div>
-                <div class="title">Network Topology</div>
-                <div class="desc">Visual network architecture</div>
-            </div>
-
-            <div class="menu-button" onclick="clearTerminal()">
-                <div class="icon">🔄</div>
-                <div class="title">Clear & Restart</div>
-                <div class="desc">Reset terminal and reconnect</div>
-            </div>
-        </div>
-
-        <div class="terminal" id="terminal">
-            <div class="terminal-line ansi-cyan">🐳 Docker Network Diagnostic Tool</div>
-            <div class="terminal-line ansi-dim">Connecting to diagnostic service...</div>
-        </div>
-
-        <div class="input-section">
-            <input type="text" id="userInput" placeholder="Enter command or response..." onkeypress="handleKeyPress(event)">
-            <button class="btn" onclick="sendInput()">Send</button>
-            <button class="btn btn-secondary" onclick="clearTerminal()">Clear</button>
-        </div>
-
-        <div class="footer">
-            <p>Built for Docker Desktop Product Management Interview</p>
-            <p style="margin-top: 10px; font-size: 0.9em;">
-                Addresses key pain points: Container connectivity, Port mapping, DNS resolution, Network debugging
-            </p>
-        </div>
-    </div>
-
-    <script>
-        let ws = null;
-        const terminal = document.getElementById('terminal');
-        const userInput = document.getElementById('userInput');
-        const statusEl = document.getElementById('status');
-
-        function connect() {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-
-            ws.onopen = () => {
-                statusEl.textContent = 'Connected';
-                statusEl.className = 'status connected';
-                addTerminalLine('Connected to diagnostic service', 'ansi-green');
-                addTerminalLine('Select an option above or type a command', 'ansi-dim');
-            };
-
-            ws.onmessage = (event) => {
-                const data = JSON.parse(event.data);
-                if (data.type === 'output') {
-                    addTerminalLine(data.content);
-                }
-            };
-
-            ws.onclose = () => {
-                statusEl.textContent = 'Disconnected';
-                statusEl.className = 'status disconnected';
-                addTerminalLine('Disconnected from server', 'ansi-red');
-                setTimeout(connect, 3000); // Reconnect after 3 seconds
-            };
-
-            ws.onerror = (error) => {
-                addTerminalLine('Connection error', 'ansi-red');
-            };
-        }
-
-        function addTerminalLine(content, cssClass = '') {
-            const line = document.createElement('div');
-            line.className = `terminal-line ${cssClass}`;
-
-            // Basic ANSI code conversion to HTML
-            let html = content
-                .replace(/\033\[92m/g, '<span class="ansi-green">')
-                .replace(/\033\[91m/g, '<span class="ansi-red">')
-                .replace(/\033\[93m/g, '<span class="ansi-yellow">')
-                .replace(/\033\[94m/g, '<span class="ansi-blue">')
-                .replace(/\033\[96m/g, '<span class="ansi-cyan">')
-                .replace(/\033\[95m/g, '<span class="ansi-magenta">')
-                .replace(/\033\[2m/g, '<span class="ansi-dim">')
-                .replace(/\033\[1m/g, '<span class="ansi-bold">')
-                .replace(/\033\[0m/g, '</span>')
-                .replace(/\033\[[0-9;]+m/g, ''); // Remove other codes
-
-            line.innerHTML = html;
-            terminal.appendChild(line);
-            terminal.scrollTop = terminal.scrollHeight;
-        }
-
-        function sendInput() {
-            const value = userInput.value.trim();
-            if (value && ws && ws.readyState === WebSocket.OPEN) {
-                addTerminalLine(`> ${value}`, 'ansi-cyan');
-                ws.send(JSON.stringify({ type: 'input', content: value }));
-                userInput.value = '';
-            }
-        }
-
-        function sendCommand(cmd) {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                addTerminalLine(`> ${cmd}`, 'ansi-cyan');
-                ws.send(JSON.stringify({ type: 'input', content: cmd }));
-            }
-        }
-
-        function handleKeyPress(event) {
-            if (event.key === 'Enter') {
-                sendInput();
-            }
-        }
-
-        function clearTerminal() {
-            terminal.innerHTML = '';
-            if (ws) {
-                ws.close();
-            }
-            setTimeout(connect, 500);
-        }
-
-        // Connect on page load
-        connect();
-    </script>
-</body>
-</html>
-"""
-
-@app.get("/", response_class=HTMLResponse)
+@app.get("/")
 async def root():
-    """Serve the web terminal interface"""
-    return HTML_TEMPLATE
+    """Serve the main HTML page"""
+    return FileResponse(str(static_path / "index.html"))
 
 @app.get("/health")
 async def health_check():
@@ -464,7 +89,8 @@ async def websocket_endpoint(websocket: WebSocket):
             "type": "output",
             "content": f"Error: {str(e)}"
         })
-        active_connections.remove(websocket)
+        if websocket in active_connections:
+            active_connections.remove(websocket)
 
 async def send_line(ws: WebSocket, line: str):
     """Send a line to the websocket"""
@@ -537,6 +163,9 @@ async def run_diagnostic_demo(ws: WebSocket):
     await send_line(ws, "2. Start the redis container")
     await send_line(ws, "   $ docker start redis")
     await send_line(ws, "")
+    await send_line(ws, "3. Connect containers to same network")
+    await send_line(ws, "   $ docker network connect my_network external-api")
+    await send_line(ws, "")
     await send_line(ws, "Diagnostic complete! Use buttons above to explore other features.")
 
 async def run_wizard_demo(ws: WebSocket):
@@ -548,7 +177,7 @@ async def run_wizard_demo(ws: WebSocket):
     await send_line(ws, "")
     await send_line(ws, "This wizard helps resolve network issues step by step.")
     await send_line(ws, "")
-    await send_line(ws, "Issue 1/2: Database port 3306 not exposed")
+    await send_line(ws, "Issue 1/3: Database port 3306 not exposed")
     await send_line(ws, "  Applications cannot connect to database from host")
     await send_line(ws, "")
     await send_line(ws, "Recommended fix:")
@@ -559,9 +188,23 @@ async def run_wizard_demo(ws: WebSocket):
     await send_line(ws, "  $ ports:")
     await send_line(ws, "  $   - '3306:3306'")
     await send_line(ws, "")
-    await send_line(ws, "In a live environment, you would mark this as fixed or skip.")
+    await asyncio.sleep(0.8)
+    await send_line(ws, "✓ Issue marked as resolved")
     await send_line(ws, "")
-    await send_line(ws, "Wizard demo complete!")
+    await send_line(ws, "Issue 2/3: Container 'redis' is not running")
+    await send_line(ws, "  Stopped containers cannot accept connections")
+    await send_line(ws, "")
+    await send_line(ws, "Recommended fix:")
+    await send_line(ws, "  Start the redis container")
+    await send_line(ws, "")
+    await send_line(ws, "Command to run:")
+    await send_line(ws, "  $ docker start redis")
+    await send_line(ws, "")
+    await asyncio.sleep(0.8)
+    await send_line(ws, "✓ Issue marked as resolved")
+    await send_line(ws, "")
+    await send_line(ws, "🎉 Wizard complete!")
+    await send_line(ws, "All critical issues have been addressed.")
 
 async def run_monitor_demo(ws: WebSocket):
     """Demo of live monitoring"""
@@ -579,6 +222,11 @@ async def run_monitor_demo(ws: WebSocket):
     await send_line(ws, "Host → api-service:3000              ████████░░░   180 pkt/s   8ms       ✓ Active")
     await send_line(ws, "")
     await send_line(ws, "(In live mode, this updates every 500ms)")
+    await send_line(ws, "")
+    await send_line(ws, "Key Insights:")
+    await send_line(ws, "  ⚠ redis connection failed - container not running")
+    await send_line(ws, "  ✓ Database connections stable with low latency")
+    await send_line(ws, "  ✓ Host → container traffic healthy")
 
 async def run_health_check_demo(ws: WebSocket):
     """Demo of quick health check"""
@@ -594,6 +242,9 @@ async def run_health_check_demo(ws: WebSocket):
     await send_line(ws, "  ✓ Network routing configured")
     await send_line(ws, "")
     await send_line(ws, "⚠ 1 issue requires attention")
+    await send_line(ws, "")
+    await send_line(ws, "Recommendation:")
+    await send_line(ws, "  Run 'Full Network Diagnostic' for detailed analysis")
 
 async def run_topology_demo(ws: WebSocket):
     """Demo of network topology viewer"""
@@ -609,6 +260,7 @@ async def run_topology_demo(ws: WebSocket):
     await send_line(ws, "    │    Docker Desktop VM     │")
     await send_line(ws, "    └───────────┬─────────────┘")
     await send_line(ws, "                │")
+    await send_line(ws, "                │ (bridge network)")
     await send_line(ws, "                ▼")
     await send_line(ws, "    ┌─────────────────────────┐")
     await send_line(ws, "    │   Bridge: my_network    │")
@@ -625,12 +277,16 @@ async def run_topology_demo(ws: WebSocket):
     await send_line(ws, "                │")
     await send_line(ws, "                ├─────▶ ○ redis")
     await send_line(ws, "                │       IP: 172.18.0.4")
-    await send_line(ws, "                │       ⚠ Connection Issue")
+    await send_line(ws, "                │       Ports: 6379:6379")
+    await send_line(ws, "                │       ⚠ Container stopped")
     await send_line(ws, "                │")
     await send_line(ws, "                └─────▶ ● api-service")
     await send_line(ws, "                        IP: 172.18.0.5")
     await send_line(ws, "                        Ports: 3000:3000")
     await send_line(ws, "")
+    await send_line(ws, "Legend:")
+    await send_line(ws, "  ● Running container    ○ Stopped container")
+    await send_line(ws, "  ⚠ Issue detected")
 
 if __name__ == "__main__":
     import uvicorn

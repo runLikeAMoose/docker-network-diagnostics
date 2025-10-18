@@ -8,6 +8,7 @@ env/
 venv/
 ENV/
 .venv
+railway_deploy/venv/
 pip-log.txt
 pip-delete-this-directory.txt
 *.egg-info/
