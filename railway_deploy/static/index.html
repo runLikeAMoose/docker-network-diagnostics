@@ -2,7 +2,7 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Dockter - Docker Network Diagnostics</title>
 
     <!-- Open Graph / Social Media Meta Tags -->
@@ -115,6 +115,13 @@
             cursor: text;
             scroll-behavior: smooth;
         }
+
+        /* Prevent iOS zoom on input focus - ensure min 16px font size */
+        @media (max-width: 640px) {
+            #terminalInput {
+                font-size: 16px;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-900 text-gray-100 h-screen flex flex-col overflow-hidden">
@@ -169,20 +176,26 @@
             </div>
 
             <!-- Integrated Terminal Input (always visible, at bottom of terminal) -->
-            <div class="flex-shrink-0 bg-black/80 px-4 sm:px-6 py-3 border-t border-gray-700/50 flex items-center gap-2">
+            <form class="flex-shrink-0 bg-black/80 px-4 sm:px-6 py-3 border-t border-gray-700/50 flex items-center gap-2" onsubmit="handleTerminalSubmit(event)">
                 <span class="text-green-400 font-mono text-sm">❯</span>
                 <input
                     type="text"
                     id="terminalInput"
                     placeholder="Type command (1-5) or 'help'..."
                     class="flex-1 bg-transparent border-none text-white placeholder-gray-600 text-sm focus:outline-none font-mono"
-                    onkeypress="handleTerminalKeyPress(event)"
+                    inputmode="text"
+                    enterkeyhint="send"
                     autocomplete="off"
                     autocorrect="off"
                     autocapitalize="off"
                     spellcheck="false"
                 >
-            </div>
+                <button type="submit" class="text-green-400 hover:text-green-300 transition-colors sm:hidden" aria-label="Send command">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                    </svg>
+                </button>
+            </form>
         </div>
 
     </main>

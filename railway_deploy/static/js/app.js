@@ -289,7 +289,13 @@ function sendTerminalInput() {
         addTerminalLine(`> ${value}`, 'text-cyan-400 font-bold');
         ws.send(JSON.stringify({ type: 'input', content: value }));
         terminalInput.value = '';
-        // addTerminalLine already handles scrolling
+
+        // Dismiss keyboard on mobile after sending
+        if (window.innerWidth < 640) {
+            terminalInput.blur();
+            // Re-focus after a short delay for better UX
+            setTimeout(() => terminalInput.focus(), 100);
+        }
     }
 }
 
@@ -311,9 +317,17 @@ function sendCommand(cmd) {
     }
 }
 
-// Handle Enter key in terminal input
+// Handle form submit (works for Enter key AND mobile keyboard "Done" button)
+function handleTerminalSubmit(event) {
+    event.preventDefault(); // Prevent page reload
+    sendTerminalInput();
+    return false;
+}
+
+// Legacy handler - still works for desktop Enter key
 function handleTerminalKeyPress(event) {
     if (event.key === 'Enter') {
+        event.preventDefault();
         sendTerminalInput();
     }
 }
