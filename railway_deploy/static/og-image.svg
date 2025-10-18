@@ -1,0 +1,78 @@
+<svg width="1200" height="630" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background gradient -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1e293b;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="dockerBlue" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#0db7ed;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0ea5d9;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+
+  <!-- Subtle grid pattern -->
+  <g opacity="0.05">
+    <line x1="0" y1="157.5" x2="1200" y2="157.5" stroke="#0db7ed" stroke-width="1"/>
+    <line x1="0" y1="315" x2="1200" y2="315" stroke="#0db7ed" stroke-width="1"/>
+    <line x1="0" y1="472.5" x2="1200" y2="472.5" stroke="#0db7ed" stroke-width="1"/>
+    <line x1="300" y1="0" x2="300" y2="630" stroke="#0db7ed" stroke-width="1"/>
+    <line x1="600" y1="0" x2="600" y2="630" stroke="#0db7ed" stroke-width="1"/>
+    <line x1="900" y1="0" x2="900" y2="630" stroke="#0db7ed" stroke-width="1"/>
+  </g>
+
+  <!-- Official Docker Logo (scaled and positioned) -->
+  <g transform="translate(50, 150) scale(0.25)">
+    <circle cx="512" cy="512" r="512" style="fill:#0091e2"/>
+    <path d="M827.3 461.5c-1.6-1.3-16.1-12.2-46.7-12.2-8.1 0-16.2.6-24.2 2.1-5.9-40.7-39.5-60.5-41-61.4l-8.2-4.8-5.4 7.8c-6.8 10.5-11.7 22-14.6 34.2-5.5 23.2-2.2 45 9.6 63.6-14.2 7.9-37.1 9.9-41.7 10H277c-9.9 0-17.9 8-17.9 17.9-.4 33.1 5.2 66 16.5 97.1 13 34.2 32.4 59.3 57.6 74.7 28.2 17.3 74.1 27.2 126.2 27.2 23.5.1 47-2.1 70.1-6.4 32.1-5.9 63-17.1 91.4-33.2 23.4-13.6 44.5-30.8 62.4-51.1 29.9-33.9 47.8-71.7 61.1-105.2h5.3c32.8 0 53-13.1 64.1-24.1 7.4-7 13.2-15.5 16.9-25l2.3-6.9-5.7-4.3zM312 489.9h50.7c2.4 0 4.4-2 4.4-4.4v-45.1c0-2.4-2-4.4-4.4-4.5H312c-2.4 0-4.4 2-4.4 4.4v45.2c0 2.5 2 4.4 4.4 4.4m69.9 0h50.7c2.4 0 4.4-2 4.4-4.4v-45.1c0-2.4-2-4.4-4.4-4.5h-50.7c-2.5 0-4.5 2-4.5 4.5v45.1c0 2.5 2 4.4 4.5 4.4m70.8.1h50.7c2.4 0 4.4-2 4.4-4.4v-45.1c0-2.4-2-4.4-4.4-4.5h-50.7c-2.4 0-4.4 2-4.4 4.4v45.2c0 2.4 2 4.3 4.4 4.4m70.1 0h50.7c2.4 0 4.4-2 4.5-4.4v-45.1c0-2.5-2-4.5-4.5-4.5h-50.7c-2.4 0-4.4 2-4.4 4.4v45.2c0 2.4 1.9 4.4 4.4 4.4m-141-65h50.7c2.4 0 4.4-2 4.4-4.5v-45.1c0-2.4-2-4.4-4.4-4.4h-50.7c-2.5 0-4.4 2-4.5 4.4v45.1c.1 2.5 2.1 4.5 4.5 4.5m70.9 0h50.7c2.4 0 4.4-2 4.4-4.5v-45.1c0-2.4-2-4.4-4.4-4.4h-50.7c-2.4 0-4.4 2-4.4 4.4v45.1c0 2.5 2 4.5 4.4 4.5m70.1 0h50.7c2.5 0 4.4-2 4.5-4.5v-45.1c0-2.5-2-4.4-4.5-4.4h-50.7c-2.4 0-4.4 2-4.4 4.4v45.1c0 2.5 1.9 4.5 4.4 4.5m0-64.9h50.7c2.5 0 4.5-2 4.5-4.5v-45.2c0-2.4-2-4.4-4.5-4.4h-50.7c-2.4 0-4.4 2-4.4 4.4v45.2c0 2.5 1.9 4.5 4.4 4.5M593.4 490h50.7c2.4 0 4.4-2 4.4-4.4v-45.1c0-2.5-2-4.4-4.4-4.5h-50.7c-2.4 0-4.4 2-4.4 4.4v45.2c0 2.4 2 4.4 4.4 4.4" style="fill:#fff"/>
+  </g>
+
+  <!-- Main title: DOCKTER -->
+  <text x="320" y="230" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+        font-size="96" font-weight="800" fill="url(#dockerBlue)" text-anchor="start" letter-spacing="-2">
+    DOCKTER
+  </text>
+
+  <!-- Subtitle -->
+  <text x="320" y="295" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+        font-size="32" fill="#94a3b8" text-anchor="start" font-weight="500">
+    Docker Network Diagnostics
+  </text>
+
+  <!-- Decorative line -->
+  <line x1="320" y1="330" x2="1100" y2="330" stroke="#0db7ed" stroke-width="2" opacity="0.3"/>
+
+  <!-- Feature highlights -->
+  <g transform="translate(320, 385)">
+    <text y="0" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif"
+          font-size="22" fill="#cbd5e1" font-weight="600">
+      🔍 Real-time Diagnostics  •  🌐 Network Topology  •  ⚡ Interactive CLI
+    </text>
+  </g>
+
+  <!-- Terminal window mockup -->
+  <g transform="translate(320, 430)">
+    <!-- Terminal window -->
+    <rect x="0" y="0" width="600" height="140" rx="8" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+    <!-- Terminal header -->
+    <rect x="0" y="0" width="600" height="32" rx="8" fill="#0f172a"/>
+    <circle cx="16" cy="16" r="5" fill="#ef4444"/>
+    <circle cx="36" cy="16" r="5" fill="#f59e0b"/>
+    <circle cx="56" cy="16" r="5" fill="#10b981"/>
+
+    <!-- Terminal content -->
+    <text x="20" y="60" font-family="'Courier New', monospace" font-size="14" fill="#0db7ed">
+      $ docker network diagnose
+    </text>
+    <text x="20" y="85" font-family="'Courier New', monospace" font-size="14" fill="#10b981">
+      ✓ Checking container connectivity...
+    </text>
+    <text x="20" y="110" font-family="'Courier New', monospace" font-size="14" fill="#10b981">
+      ✓ Network topology mapped
+    </text>
+    <rect x="20" y="120" width="8" height="14" fill="#10b981" opacity="0.7"/>
+  </g>
+</svg>
