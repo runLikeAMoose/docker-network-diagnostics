@@ -151,33 +151,36 @@ async def run_diagnostic_demo(ws: WebSocket):
 
     # Step 1: System Check with spinner
     await send_line(ws, "▼ System Check")
-    await send_line(ws, "Checking Docker installation...")
 
     # Animate spinner for system check
     spinner_chars = ['◐', '◓', '◑', '◒']
-    for i in range(6):
+    await ws.send_json({"type": "output", "content": ""})  # Add line for animation
+    for i in range(8):
         await ws.send_json({
-            "type": "output",
+            "type": "animate",
             "content": f"{spinner_chars[i % 4]} Detecting Docker daemon..."
         })
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.15)
 
-    await send_line(ws, "  ✓ Docker is installed and running (Demo Mode)")
+    # Replace spinner with result
+    await ws.send_json({"type": "animate", "content": "  ✓ Docker is installed and running (Demo Mode)"})
     await send_line(ws, "")
 
     # Step 2: Container Discovery with progress bar
     await send_line(ws, "▼ Container Discovery")
-    await send_line(ws, "Scanning running containers...")
 
     # Animate progress bar
-    for progress in range(0, 101, 20):
+    await ws.send_json({"type": "output", "content": ""})  # Add line for animation
+    for progress in range(0, 101, 10):
         bar = "█" * (progress // 5) + "░" * (20 - progress // 5)
         await ws.send_json({
-            "type": "output",
-            "content": f"[{bar}] {progress}%"
+            "type": "animate",
+            "content": f"[{bar}] {progress}% Scanning running containers..."
         })
-        await asyncio.sleep(0.15)
+        await asyncio.sleep(0.12)
 
+    # Replace progress bar with result
+    await ws.send_json({"type": "animate", "content": "  ✓ Scan complete"})
     await send_line(ws, "")
     await send_line(ws, "Discovered 5 containers:")
 
@@ -199,28 +202,50 @@ async def run_diagnostic_demo(ws: WebSocket):
     # Step 3: Network Analysis with spinner
     await send_line(ws, "▼ Network Topology Analysis")
 
-    for i in range(5):
+    await ws.send_json({"type": "output", "content": ""})  # Add line for animation
+    for i in range(7):
         await ws.send_json({
-            "type": "output",
+            "type": "animate",
             "content": f"{spinner_chars[i % 4]} Mapping network connections..."
         })
-        await asyncio.sleep(0.2)
+        await asyncio.sleep(0.15)
+
+    await ws.send_json({"type": "animate", "content": "  ✓ Topology mapped"})
     await send_line(ws, "")
-    await send_line(ws, "Network Topology:")
     await send_line(ws, "")
-    await send_line(ws, "    ┌─────────────────────────┐")
-    await send_line(ws, "    │   Host Network (macOS)  │")
-    await send_line(ws, "    └───────────┬─────────────┘")
-    await send_line(ws, "                │")
-    await send_line(ws, "                ▼")
-    await send_line(ws, "    ┌─────────────────────────┐")
-    await send_line(ws, "    │   Bridge: my_network    │")
-    await send_line(ws, "    └───────────┬─────────────┘")
-    await send_line(ws, "                │")
-    await send_line(ws, "                ├─────▶ ● web-app (172.18.0.2)")
-    await send_line(ws, "                ├─────▶ ● database (172.18.0.3) ⚠ Connection Issue")
-    await send_line(ws, "                ├─────▶ ○ redis (172.18.0.4) ⚠ Connection Issue")
-    await send_line(ws, "                └─────▶ ● api-service (172.18.0.5)")
+    await send_line(ws, "              ┏━━━━━━━━━━━━━━━━━━━━━━━━━┓")
+    await send_line(ws, "              ┃  🖥️  Host (macOS/Win)    ┃")
+    await send_line(ws, "              ┗━━━━━━━━━━━┳━━━━━━━━━━━━━┛")
+    await send_line(ws, "                          ┃")
+    await send_line(ws, "                          ┃ Port Forward")
+    await send_line(ws, "                          ▼")
+    await send_line(ws, "              ╔═══════════════════════════╗")
+    await send_line(ws, "              ║  🌐 Bridge: my_network    ║")
+    await send_line(ws, "              ║  Subnet: 172.18.0.0/16    ║")
+    await send_line(ws, "              ╚═══════════╦═══════════════╝")
+    await send_line(ws, "                          ┃")
+    await send_line(ws, "            ┌─────────────┼─────────────┐")
+    await send_line(ws, "            │             │             │")
+    await send_line(ws, "            ▼             ▼             ▼")
+    await send_line(ws, "")
+    await send_line(ws, "       ┌────────┐    ┌────────┐    ┌────────┐")
+    await send_line(ws, "       │✓ web   │    │✓ api   │    │⚠ db    │")
+    await send_line(ws, "       │  -app  │    │  -svc  │    │  -base │")
+    await send_line(ws, "       └────────┘    └────────┘    └────────┘")
+    await send_line(ws, "       172.18.0.2    172.18.0.5    172.18.0.3")
+    await send_line(ws, "       8080:80       3000:3000     No ports")
+    await send_line(ws, "")
+    await send_line(ws, "            │             │             │")
+    await send_line(ws, "            └─────────────┼─────────────┘")
+    await send_line(ws, "                          │")
+    await send_line(ws, "                          ▼")
+    await send_line(ws, "")
+    await send_line(ws, "                     ┌────────┐")
+    await send_line(ws, "                     │✗ redis │")
+    await send_line(ws, "                     │ (down) │")
+    await send_line(ws, "                     └────────┘")
+    await send_line(ws, "                     172.18.0.4")
+    await send_line(ws, "")
     await send_line(ws, "")
 
     await send_line(ws, "▼ Diagnostic Summary")

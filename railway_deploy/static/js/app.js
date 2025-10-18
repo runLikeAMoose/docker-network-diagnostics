@@ -20,26 +20,15 @@ function connect() {
 
     ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
         if (data.type === 'output') {
-            // Stop any current animation
-            stopAnimation();
-
-            // Check if this is a "thinking" or "loading" type message
-            const content = data.content.toLowerCase();
-            if (content.includes('scanning') || content.includes('analyzing') ||
-                content.includes('checking') || content.includes('testing') ||
-                content.includes('mapping') || content.includes('detecting')) {
-                // Add animated thinking indicator
-                addAnimatedThinking(data.content);
-
-                // Auto-remove after animation completes
-                setTimeout(() => {
-                    stopAnimation();
-                    addTerminalLine(data.content);
-                }, 1500);
-            } else {
-                addTerminalLine(data.content);
-            }
+            addTerminalLine(data.content);
+        } else if (data.type === 'animate') {
+            // Animation frame - replace last line
+            updateLastLine(data.content);
+        } else if (data.type === 'clear_last') {
+            // Remove last line
+            removeLastLine();
         }
     };
 
@@ -123,22 +112,16 @@ function stopAnimation() {
     }
 }
 
-// Add line to terminal with optional styling
-function addTerminalLine(content, additionalClasses = '') {
-    const line = document.createElement('div');
-    line.className = `terminal-line mb-1 ${additionalClasses}`;
-
-    // Convert ANSI codes to Tailwind classes
-    let processedContent = content;
-
+// Process content for display
+function processContent(content) {
     // Escape HTML first
-    processedContent = processedContent
+    let processed = content
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
     // Convert ANSI color codes to HTML spans with Tailwind classes
-    processedContent = processedContent
+    processed = processed
         .replace(/\033\[92m/g, '<span class="text-green-400">')
         .replace(/\033\[91m/g, '<span class="text-red-400">')
         .replace(/\033\[93m/g, '<span class="text-yellow-400">')
@@ -151,18 +134,45 @@ function addTerminalLine(content, additionalClasses = '') {
         .replace(/\033\[[0-9;]+m/g, ''); // Remove other codes
 
     // Handle special characters and symbols
-    processedContent = processedContent
+    processed = processed
         .replace(/✓/g, '<span class="text-green-400">✓</span>')
         .replace(/✗/g, '<span class="text-red-400">✗</span>')
         .replace(/⚠/g, '<span class="text-yellow-400">⚠</span>')
         .replace(/●/g, '<span class="text-green-400">●</span>')
         .replace(/○/g, '<span class="text-gray-500">○</span>');
 
-    line.innerHTML = processedContent;
+    return processed;
+}
+
+// Add line to terminal with optional styling
+function addTerminalLine(content, additionalClasses = '') {
+    const line = document.createElement('div');
+    line.className = `terminal-line mb-1 ${additionalClasses}`;
+    line.innerHTML = processContent(content);
     terminal.appendChild(line);
 
     // Auto-scroll to bottom
     terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Update the last line in terminal (for animations)
+function updateLastLine(content) {
+    const lines = terminal.querySelectorAll('.terminal-line');
+    if (lines.length > 0) {
+        const lastLine = lines[lines.length - 1];
+        lastLine.innerHTML = processContent(content);
+    } else {
+        addTerminalLine(content);
+    }
+    terminal.scrollTop = terminal.scrollHeight;
+}
+
+// Remove the last line from terminal
+function removeLastLine() {
+    const lines = terminal.querySelectorAll('.terminal-line');
+    if (lines.length > 0) {
+        lines[lines.length - 1].remove();
+    }
 }
 
 // Add animated progress bar
