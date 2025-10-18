@@ -142,32 +142,69 @@ async def show_help(ws: WebSocket):
     await send_line(ws, "")
 
 async def run_diagnostic_demo(ws: WebSocket):
-    """Run a demo of the full diagnostic"""
+    """Run a demo of the full diagnostic with progress animations"""
     await send_line(ws, "")
     await send_line(ws, "═══════════════════════════════════════════════")
     await send_line(ws, "        Docker Network Diagnostics")
     await send_line(ws, "═══════════════════════════════════════════════")
     await send_line(ws, "")
 
-    # Simulate diagnostic steps
+    # Step 1: System Check with spinner
     await send_line(ws, "▼ System Check")
-    await asyncio.sleep(0.5)
+    await send_line(ws, "Checking Docker installation...")
+
+    # Animate spinner for system check
+    spinner_chars = ['◐', '◓', '◑', '◒']
+    for i in range(6):
+        await ws.send_json({
+            "type": "output",
+            "content": f"{spinner_chars[i % 4]} Detecting Docker daemon..."
+        })
+        await asyncio.sleep(0.2)
+
     await send_line(ws, "  ✓ Docker is installed and running (Demo Mode)")
     await send_line(ws, "")
 
+    # Step 2: Container Discovery with progress bar
     await send_line(ws, "▼ Container Discovery")
-    await asyncio.sleep(0.8)
+    await send_line(ws, "Scanning running containers...")
+
+    # Animate progress bar
+    for progress in range(0, 101, 20):
+        bar = "█" * (progress // 5) + "░" * (20 - progress // 5)
+        await ws.send_json({
+            "type": "output",
+            "content": f"[{bar}] {progress}%"
+        })
+        await asyncio.sleep(0.15)
+
     await send_line(ws, "")
     await send_line(ws, "Discovered 5 containers:")
-    await send_line(ws, "  ● web-app            172.18.0.2      Ports: 8080:80")
-    await send_line(ws, "  ● database           172.18.0.3      No exposed ports")
-    await send_line(ws, "  ○ redis              172.18.0.4      Container stopped")
-    await send_line(ws, "  ● api-service        172.18.0.5      Ports: 3000:3000")
-    await send_line(ws, "  ● external-api       172.19.0.2      Ports: 8081:80")
+
+    # Show containers one by one with slight delay
+    containers = [
+        "  ● web-app            172.18.0.2      Ports: 8080:80",
+        "  ● database           172.18.0.3      No exposed ports",
+        "  ○ redis              172.18.0.4      Container stopped",
+        "  ● api-service        172.18.0.5      Ports: 3000:3000",
+        "  ● external-api       172.19.0.2      Ports: 8081:80"
+    ]
+
+    for container in containers:
+        await send_line(ws, container)
+        await asyncio.sleep(0.1)
+
     await send_line(ws, "")
 
+    # Step 3: Network Analysis with spinner
     await send_line(ws, "▼ Network Topology Analysis")
-    await asyncio.sleep(0.6)
+
+    for i in range(5):
+        await ws.send_json({
+            "type": "output",
+            "content": f"{spinner_chars[i % 4]} Mapping network connections..."
+        })
+        await asyncio.sleep(0.2)
     await send_line(ws, "")
     await send_line(ws, "Network Topology:")
     await send_line(ws, "")
@@ -251,26 +288,78 @@ async def run_wizard_demo(ws: WebSocket):
     await send_line(ws, "All critical issues have been addressed.")
 
 async def run_monitor_demo(ws: WebSocket):
-    """Demo of live monitoring"""
+    """Demo of live monitoring with real-time updates"""
     await send_line(ws, "")
     await send_line(ws, "═══════════════════════════════════════════════")
     await send_line(ws, "          Live Network Monitor")
     await send_line(ws, "═══════════════════════════════════════════════")
     await send_line(ws, "")
+    await send_line(ws, "Monitoring connections... (updates every 500ms)")
+    await send_line(ws, "")
+
+    # Initial static header
     await send_line(ws, "Connection                           Throughput             Latency    Status")
     await send_line(ws, "──────────────────────────────────────────────────────────────────────────")
-    await send_line(ws, "web-app → database:3306              ████████░░░░  120 pkt/s   23ms      ✓ Active")
-    await send_line(ws, "api-service → database:3306          ██████░░░░░░  90 pkt/s    18ms      ✓ Active")
-    await send_line(ws, "web-app → redis:6379                 ✗░░░░░░░░░░   0 pkt/s     -         ✗ Failed")
-    await send_line(ws, "Host → web-app:80                    ███████████   250 pkt/s   5ms       ✓ Active")
-    await send_line(ws, "Host → api-service:3000              ████████░░░   180 pkt/s   8ms       ✓ Active")
+
+    # Run live updates for 10 iterations (5 seconds)
+    import random
+    for iteration in range(10):
+        # Generate dynamic values
+        web_db_packets = 100 + random.randint(-20, 40)
+        web_db_latency = 20 + random.randint(-5, 10)
+
+        api_db_packets = 80 + random.randint(-15, 30)
+        api_db_latency = 15 + random.randint(-3, 8)
+
+        host_web_packets = 200 + random.randint(-50, 100)
+        host_web_latency = 5 + random.randint(0, 5)
+
+        host_api_packets = 150 + random.randint(-30, 60)
+        host_api_latency = 7 + random.randint(0, 6)
+
+        # Generate progress bars
+        web_db_bar = "█" * (web_db_packets // 15) + "░" * (12 - web_db_packets // 15)
+        api_db_bar = "█" * (api_db_packets // 15) + "░" * (12 - api_db_packets // 15)
+        host_web_bar = "█" * min(host_web_packets // 25, 11) + "░" * max(11 - host_web_packets // 25, 0)
+        host_api_bar = "█" * (host_api_packets // 20) + "░" * (12 - host_api_packets // 20)
+
+        # Send frame
+        await ws.send_json({
+            "type": "output",
+            "content": f"web-app → database:3306              {web_db_bar}  {web_db_packets:3d} pkt/s   {web_db_latency:2d}ms      ✓ Active"
+        })
+        await ws.send_json({
+            "type": "output",
+            "content": f"api-service → database:3306          {api_db_bar}  {api_db_packets:3d} pkt/s   {api_db_latency:2d}ms      ✓ Active"
+        })
+        await ws.send_json({
+            "type": "output",
+            "content": f"web-app → redis:6379                 ✗░░░░░░░░░░░   0 pkt/s     -         ✗ Failed"
+        })
+        await ws.send_json({
+            "type": "output",
+            "content": f"Host → web-app:80                    {host_web_bar}  {host_web_packets:3d} pkt/s   {host_web_latency:2d}ms      ✓ Active"
+        })
+        await ws.send_json({
+            "type": "output",
+            "content": f"Host → api-service:3000              {host_api_bar}  {host_api_packets:3d} pkt/s   {host_api_latency:2d}ms      ✓ Active"
+        })
+
+        # Add separator between frames
+        if iteration < 9:
+            await ws.send_json({"type": "output", "content": "──────────────────────────────────────────────────────────────────────────"})
+
+        # Wait 500ms before next update
+        await asyncio.sleep(0.5)
+
+    # Final summary
     await send_line(ws, "")
-    await send_line(ws, "(In live mode, this updates every 500ms)")
     await send_line(ws, "")
-    await send_line(ws, "Key Insights:")
+    await send_line(ws, "Monitoring complete. Key Insights:")
     await send_line(ws, "  ⚠ redis connection failed - container not running")
     await send_line(ws, "  ✓ Database connections stable with low latency")
     await send_line(ws, "  ✓ Host → container traffic healthy")
+    await send_line(ws, "")
 
 async def run_health_check_demo(ws: WebSocket):
     """Demo of quick health check"""
