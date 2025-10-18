@@ -1,0 +1,48 @@
+Background
+Docker is a platform trusted by millions of developers for building, sharing, and running
+containerized applications. We’ve become the industry standard for container tooling, with a
+thriving ecosystem spanning individual developers, open source communities, and enterprises.
+Docker Desktop is our flagship developer product—a cross-platform GUI and CLI tool that
+enables developers to run Linux containers natively on macOS and Windows. It includes
+everything needed to build containerized applications: Docker Engine, Kubernetes, Docker
+Compose, volume & network management, and integrations with popular developer tools like
+Visual Studio Code.
+Docker Desktop plays a critical role in helping developers test and iterate on their applications
+locally—before those applications reach CI or production environments.
+Situation
+Today, many developers run multi-container applications locally using Docker Desktop and
+Docker Compose. These applications often require container-to-container communication,
+access to external services, or port forwarding to the host (Docker runs in a VM on macOS and
+Windows).
+When something goes wrong—such as a container failing to connect to a database, a web
+service not responding, or DNS resolution failing—developers are left with minimal tooling to
+understand and resolve the issue. Common questions like the following are difficult to answer
+with current functionality:
+● Why can’t container A reach container B?
+● Is the right port exposed and mapped?
+● Is there a DNS or bridge network misconfiguration?
+● Is traffic being blocked by a VPN or local firewall?
+The current debugging experience relies heavily on manual inspection, trial and error, and
+community workarounds. This results in lost productivity and a frustrating developer
+experience—especially for new users or teams in more complex enterprise environments.
+Problem Statement
+Developers struggle to understand and debug networking issues when containers are unable to
+connect to each other, the host, or external services. How can Docker Desktop help developers
+more easily diagnose and resolve these issues?
+Your Task
+As the Senior Product Manager for Docker Desktop, define your strategy and product approach
+to address this problem.
+Part 1: Write a product briefing for helping developers with networking in Docker Desktop.
+Breadth is more important than depth but we would like to understand the challenges you would
+be solving for the customer and how you envision solving them.
+Part 2: Propose the scope for an MLP (Minimum Lovable Product) that will be launched to a
+subset of beta users. Define the goals for the beta program and what you hope to achieve.
+Part 3: Be prepared to provide the rationale for your decisions during the interview.
+Deliverables
+● Please submit a written response of no more than 3–5 pages to the recruiter.
+● Please spend no more than 2 hours on this assignment.
+● Visuals (e.g., wireframes, workflows, architecture diagrams) are optional.
+● We are primarily interested in your product thinking, prioritization, and ability to navigate
+tradeoffs between user needs, technical constraints, and business goals.
+● During the next stage of the interview process, we will walk through your response and
+use it as the basis for a collaborative discussion.
