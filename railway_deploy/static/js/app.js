@@ -57,16 +57,16 @@ function connect() {
 function updateConnectionStatus(connected) {
     if (connected) {
         statusEl.innerHTML = `
-            <span class="inline-block w-2 h-2 rounded-full bg-green-500 mr-2 animate-pulse"></span>
-            Connected
+            <span class="w-2 h-2 rounded-full bg-green-500 status-pulse"></span>
+            <span class="text-sm text-green-300 font-medium">Connected</span>
         `;
-        statusEl.className = 'px-4 py-2 rounded-full text-sm font-semibold bg-green-500/20 text-green-300 border border-green-500/30';
+        statusEl.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/20';
     } else {
         statusEl.innerHTML = `
-            <span class="inline-block w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></span>
-            Disconnected
+            <span class="w-2 h-2 rounded-full bg-red-500 status-pulse"></span>
+            <span class="text-sm text-red-300 font-medium">Disconnected</span>
         `;
-        statusEl.className = 'px-4 py-2 rounded-full text-sm font-semibold bg-red-500/20 text-red-300 border border-red-500/30';
+        statusEl.className = 'flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 border border-red-500/20';
     }
 }
 
